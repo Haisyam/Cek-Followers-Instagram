@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instagram Follower Checker</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen"
+  >
+    <div class="w-full max-w-3xl bg-white rounded-lg shadow p-8">
+      <h1 class="text-2xl font-bold mb-6 text-center">
+        Instagram Follower Checker
+      </h1>
+
+      <!-- File input for Followers JSON -->
+      <div class="mb-4">
+        <label
+          for="followersFile"
+          class="block text-gray-700 font-semibold mb-2"
+          >Upload followers_1.json</label
+        >
+        <input
+          type="file"
+          id="followersFile"
+          class="w-full p-2 border rounded"
+          accept=".json"
+        />
+      </div>
+
+      <!-- File input for Following JSON -->
+      <div class="mb-4">
+        <label
+          for="followingFile"
+          class="block text-gray-700 font-semibold mb-2"
+          >Upload following.json</label
+        >
+        <input
+          type="file"
+          id="followingFile"
+          class="w-full p-2 border rounded"
+          accept=".json"
+        />
+      </div>
+
+      <!-- Button to Check -->
+      <button
+        id="checkBtn"
+        class="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600"
+      >
+        Check
+      </button>
+
+      <!-- Results Section -->
+      <div id="results" class="mt-6"></div>
+    </div>
+
+    <script>
+      document.getElementById("checkBtn").addEventListener("click", () => {
+        const followersFile = document.getElementById("followersFile").files[0];
+        const followingFile = document.getElementById("followingFile").files[0];
+
+        if (!followersFile || !followingFile) {
+          alert("Please upload both followers and following JSON files.");
+          return;
+        }
+
+        const readFile = (file) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(JSON.parse(event.target.result));
+            reader.onerror = (error) => reject(error);
+            reader.readAsText(file);
+          });
+        };
+
+        Promise.all([readFile(followersFile), readFile(followingFile)])
+          .then(([followersData, followingData]) => {
+            // Extract followers and following lists
+            const followers = followersData.flatMap((item) =>
+              item.string_list_data.map((sub) => sub.value)
+            );
+            const following = followingData.relationships_following.flatMap(
+              (item) => item.string_list_data.map((sub) => sub.value)
+            );
+
+            // Find users you're following but not following you back
+            const notFollowingBack = following.filter(
+              (user) => !followers.includes(user)
+            );
+
+            // Display results
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = `<h2 class="text-xl font-semibold mb-4">Instagram yg tidak Followback akunmu:</h2>`;
+
+            if (notFollowingBack.length === 0) {
+              resultsDiv.innerHTML += `<p class="text-green-600 font-bold">Everyone you follow follows you back!</p>`;
+            } else {
+              notFollowingBack.forEach((user) => {
+                const userLink = document.createElement("a");
+                userLink.href = `https://www.instagram.com/${user}`;
+                userLink.target = "_blank";
+                userLink.className = "text-blue-500 hover:underline block";
+                userLink.textContent = user;
+                resultsDiv.appendChild(userLink);
+              });
+            }
+          })
+          .catch((error) => {
+            alert("Error reading files. Please check the file format.");
+            console.error(error);
+          });
+      });
+    </script>
+  </body>
+</html>
